@@ -3,54 +3,66 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+static const char* const DIR_PATH = "/.local/share/note";
+static const char* const FILE_PATH = "/notes.txt";
+
+char* get_combined_path (const char *dir, const char *path);
+
 int main(void) {
+    FILE *file = nullptr;
+    char *file_path = nullptr;
+    char *dir_path = nullptr;
+    int status = EXIT_FAILURE;
+
     const char *home_dir = getenv("HOME");
-    if (home_dir == nullptr) {
+    if (!home_dir) {
         fprintf(stderr, "HOME/ directory not found\n");
-        return EXIT_FAILURE;
+        goto cleanup;
     }
 
     printf("HOME/ found in: %s\n", home_dir);
 
-    const int len_dir_path = snprintf(nullptr, 0, "%s/.local/share/note", home_dir);
-    char *dir_path = malloc(len_dir_path + 1);
-    if (dir_path == nullptr) {
+    dir_path = get_combined_path(home_dir, DIR_PATH);
+    if (!dir_path) {
         fprintf(stderr, "memory allocation failed for dir_path\n");
-        free(dir_path);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
-    snprintf(dir_path, len_dir_path + 1, "%s/.local/share/note", home_dir);
     if (mkdir(dir_path, 0755) == -1) {
-        if (errno == EEXIST) {
-            fprintf(stdout, "directory exists in: %s\n", dir_path);
-        } else {
+        if (errno != EEXIST) {
             perror("error creating directory");
-            free(dir_path);
-            return EXIT_FAILURE;
+            goto cleanup;
         }
+        fprintf(stdout, "directory exists in: %s\n", dir_path);
     } else {
         fprintf(stdout, "directory created in: %s\n", dir_path);
     }
 
-    const int len_file_path = snprintf(nullptr, 0, "%s/notes.txt", dir_path);
-    char *file_path = malloc(len_file_path + 1);
-    if (file_path == nullptr) {
+    file_path = get_combined_path(dir_path, FILE_PATH);
+    if (!file_path) {
         fprintf(stderr, "memory allocation failed for file_path\n");
-        free(dir_path);
-        free(file_path);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
-    snprintf(file_path, len_file_path + 1, "%s/notes.txt", dir_path);
-    FILE *file = fopen(file_path, "a");
-    if (file == nullptr) {
+    file = fopen(file_path, "a");
+    if (!file) {
         perror("failed to create or open file");
-        free(dir_path);
-        free(file_path);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
 
-    fclose(file);
+    status = EXIT_SUCCESS;
+    cleanup:
+    if (file) fclose(file);
     free(file_path);
     free(dir_path);
-    return EXIT_SUCCESS;
+    return status;
+}
+
+char* get_combined_path (const char *dir, const char *path) {
+    const int len = snprintf(nullptr, 0, "%s%s", dir, path);
+    if (len < 0) return nullptr;
+
+    char *full_path = malloc(len + 1);
+    if (full_path) {
+        snprintf(full_path, len + 1,"%s%s", dir, path);
+    }
+    return full_path;
 }
