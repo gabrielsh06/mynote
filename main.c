@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stdout, "use: mynote \"your notes\"\n");
         fprintf(stdout, "     mynote --list\n");
+        fprintf(stdout, "     mynote --clear\n");
         goto cleanup;
     }
 
@@ -61,6 +62,13 @@ int main(int argc, char *argv[]) {
         char linea[256];
         while (fgets(linea, sizeof(linea), file) != nullptr) {
             printf("%s", linea);
+        }
+    } else if (strcmp(argv[1], "--clear") == 0) {
+        fclose(file);
+        file = fopen(file_path, "w");
+        if (!file) {
+            perror("failed to clear file");
+            goto cleanup;
         }
     } else {
         fclose(file);
