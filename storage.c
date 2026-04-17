@@ -1,7 +1,7 @@
 #include <errno.h>
+#include <stdio.h>
 #include <sys/stat.h>
 
-#include "paths.h"
 #include "storage.h"
 
 int create_dir(const char *dir_path) {
